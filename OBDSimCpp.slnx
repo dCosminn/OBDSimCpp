@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="OBDSimCpp/OBDSimCpp.vcxproj" Id="df9c1178-b975-4a43-a133-20e0433d77a1" />
+</Solution>
