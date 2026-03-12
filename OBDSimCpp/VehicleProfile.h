@@ -1,6 +1,6 @@
 #pragma once
 // =============================================================================
-//  VehicleProfile.h  —  Abstract base for all simulated vehicles
+//  VehicleProfile.h  --  Abstract base for all simulated vehicles
 //
 //  To add a new car:
 //    1. Create MyNewCar.h / MyNewCar.cpp
@@ -17,18 +17,18 @@
 // Parameters the EngineSimulator uses to produce realistic values.
 // Each VehicleProfile supplies its own set.
 struct EngineParams {
-    float idleRpm         = 800.0f;   // target idle RPM
+    float idleRpm = 800.0f;   // target idle RPM
     float idleRpmVariance = 40.0f;    // ±RPM oscillation at idle
-    float normalCoolant   = 89.0f;    // °C when fully warm
-    float normalOilTemp   = 86.0f;    // °C oil when warm (always slightly below coolant)
-    float normalIntake    = 24.0f;    // °C intake air at idle
-    float normalBaro      = 101.0f;   // kPa barometric (sea level = 101)
+    float normalCoolant = 89.0f;    // °C when fully warm
+    float normalOilTemp = 86.0f;    // °C oil when warm (always slightly below coolant)
+    float normalIntake = 24.0f;    // °C intake air at idle
+    float normalBaro = 101.0f;   // kPa barometric (sea level = 101)
     float normalFuelLevel = 65.0f;    // % fuel in tank
-    float normalVoltage   = 14.1f;    // V battery (engine running = alternator ~14V)
-    float normalMAF       = 2.5f;     // g/s at idle
-    float normalLoad      = 22.0f;    // % engine load at idle
-    int   cylinders       = 4;
-    bool  isDiesel        = false;
+    float normalVoltage = 14.1f;    // V battery (engine running = alternator ~14V)
+    float normalMAF = 2.5f;     // g/s at idle
+    float normalLoad = 22.0f;    // % engine load at idle
+    int   cylinders = 4;
+    bool  isDiesel = false;
 };
 
 // =============================================================================
@@ -38,6 +38,9 @@ public:
 
     // ── Identity ──────────────────────────────────────────────────────────────
     virtual std::string getVIN()          const = 0;
+    virtual std::string getCalibrationID() const = 0;  // Mode 09 PID 04 -- PCM strategy
+    virtual std::string getPartNumber()     const = 0;  // Ford DID F101 -- ECU part number
+    virtual std::string getEcuName()       const = 0;  // Mode 09 PID 0A
     virtual std::string getMake()         const = 0;
     virtual std::string getModel()        const = 0;
     virtual std::string getYear()         const = 0;

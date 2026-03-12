@@ -1,6 +1,6 @@
 #pragma once
 // =============================================================================
-//  FordFiesta2006.h  —  Ford Fiesta MK5 1.4 Petrol (80hp) 2006
+//  FordFiesta2006.h  --  Ford Fiesta MK5 1.4 Petrol (80hp) 2006
 //
 //  Protocol:  ISO 15765-4 CAN 11-bit 500kbps  (ELM327 protocol 6)
 //  ECU addr:  7E0  /  response: 7E8
@@ -15,6 +15,9 @@ class FordFiesta2006 : public VehicleProfile {
 public:
     // ── Identity ──────────────────────────────────────────────────────────────
     std::string getVIN()          const override { return "WF0FXXGAJF6R12345"; }
+    std::string getCalibrationID() const override { return "4S61-14C204-NA"; }
+    std::string getPartNumber()     const override { return "4S61-12A650-NA"; }
+    std::string getEcuName()       const override { return "PCM"; }
     std::string getMake()         const override { return "Ford"; }
     std::string getModel()        const override { return "Fiesta MK5 1.4 Petrol"; }
     std::string getYear()         const override { return "2006"; }
