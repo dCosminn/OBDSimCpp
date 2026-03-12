@@ -14,9 +14,9 @@ Connect apps like **CarScanner** or **Torque Pro** to get realistic vehicle data
 ---
 
 ## Build
-1. Open the solution in **Visual Studio 2022/2026**  
+1. Clone in **Visual Studio 2022/2026**  
 2. Set **Windows SDK Version 10.0** (latest) in project properties → General  
-3. Build the project (F7 or Ctrl+B)  
+3. Build the project (F5 or Ctrl+B)  
 
 ---
 
