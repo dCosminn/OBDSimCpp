@@ -18,36 +18,36 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\Desktop\files\BluetoothServer.cpp">
+    <ClCompile Include="BluetoothServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\Desktop\files\ELM327Handler.cpp">
+    <ClCompile Include="ELM327Handler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\Desktop\files\EngineSimulator.cpp">
+    <ClCompile Include="EngineSimulator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\Desktop\files\main.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\Desktop\files\FordFiesta2006.cpp">
+    <ClCompile Include="FordFiesta2006.cpp">
       <Filter>Vehicles</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\Desktop\files\BluetoothServer.h">
+    <ClInclude Include="BluetoothServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\Desktop\files\ELM327Handler.h">
+    <ClInclude Include="ELM327Handler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\Desktop\files\EngineSimulator.h">
+    <ClInclude Include="EngineSimulator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\Desktop\files\VehicleProfile.h">
+    <ClInclude Include="VehicleProfile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\Desktop\files\FordFiesta2006.h">
+    <ClInclude Include="FordFiesta2006.h">
       <Filter>Vehicles</Filter>
     </ClInclude>
   </ItemGroup>

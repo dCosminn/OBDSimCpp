@@ -19,18 +19,18 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\Desktop\files\BluetoothServer.cpp" />
-    <ClCompile Include="..\..\..\..\Desktop\files\ELM327Handler.cpp" />
-    <ClCompile Include="..\..\..\..\Desktop\files\EngineSimulator.cpp" />
-    <ClCompile Include="..\..\..\..\Desktop\files\FordFiesta2006.cpp" />
-    <ClCompile Include="..\..\..\..\Desktop\files\main.cpp" />
+    <ClCompile Include="BluetoothServer.cpp" />
+    <ClCompile Include="ELM327Handler.cpp" />
+    <ClCompile Include="EngineSimulator.cpp" />
+    <ClCompile Include="FordFiesta2006.cpp" />
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\Desktop\files\BluetoothServer.h" />
-    <ClInclude Include="..\..\..\..\Desktop\files\ELM327Handler.h" />
-    <ClInclude Include="..\..\..\..\Desktop\files\EngineSimulator.h" />
-    <ClInclude Include="..\..\..\..\Desktop\files\FordFiesta2006.h" />
-    <ClInclude Include="..\..\..\..\Desktop\files\VehicleProfile.h" />
+    <ClInclude Include="BluetoothServer.h" />
+    <ClInclude Include="ELM327Handler.h" />
+    <ClInclude Include="EngineSimulator.h" />
+    <ClInclude Include="FordFiesta2006.h" />
+    <ClInclude Include="VehicleProfile.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
