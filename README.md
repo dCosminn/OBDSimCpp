@@ -71,6 +71,53 @@ Connect apps like **CarScanner** or **Torque Pro** to get realistic vehicle data
 - Mode 03 – Not implemented (returns NO DATA)  
 - Other – Returns NO DATA or `7F 22 11` (UDS negative response)  
 
+### Mode 01 -- Standard SAE J1979 (19 PIDs)
+
+| PID   | Name                      | Formula           | Unit  |
+|-------|---------------------------|-------------------|-------|
+| 0104  | Calculated Engine Load    | A*100/255        | %     |
+| 0105  | Engine Coolant Temp       | A-40             | degC  |
+| 0106  | Short Term Fuel Trim Bank 1 | A/1.28 - 100     | %     |
+| 0107  | Long Term Fuel Trim Bank 1 | A/1.28 - 100     | %     |
+| 0108  | Intake Manifold Pressure   | A                 | kPa   |
+| 010C  | Engine RPM                | (A*256+B)/4      | RPM   |
+| 010D  | Vehicle Speed             | A                 | km/h  |
+| 010E  | Timing Advance            | A/2 - 64         | deg   |
+| 010F  | Intake Air Temperature    | A-40             | degC  |
+| 0110  | MAF Air Flow Rate         | (A*256+B)/100    | g/s   |
+| 0111  | Throttle Position         | A*100/255        | %     |
+| 0114  | O2 Sensor 1 Voltage       | A*0.005          | V     |
+| 0115  | O2 Sensor 2 Voltage       | A*0.005          | V     |
+| 011F  | Run Time Since Engine Start | A*256+B          | s     |
+| 012C  | Commanded EGR             | A*100/255        | %     |
+| 012F  | Fuel Tank Level           | A*100/255        | %     |
+| 0133  | Barometric Pressure       | A                 | kPa   |
+| 0142  | Control Module Voltage    | (A*256+B)/1000   | V     |
+| 0146  | Ambient Air Temperature   | A-40             | degC  |
+
+### Mode 22 -- Ford Proprietary PCM PIDs  (18 PIDs)
+
+| Command | Name                      | Formula           | Unit  |
+|---------|---------------------------|-------------------|-------|
+| 221310  | Engine Oil Temperature    | (A*256+B)/100     | degC  |
+| 221131  | Ignition Timing           | (A*256+B)/100-64  | deg   |
+| 221440  | MAP Extended              | (A*256+B)/100     | kPa   |
+| 22113C  | EGR Duty Cycle            | A*100/255        | %     |
+| 22160E  | Misfire Count Cyl 1       | A*256+B          | count |
+| 22160F  | Misfire Count Cyl 2       | A*256+B          | count |
+| 221610  | Misfire Count Cyl 3       | A*256+B          | count |
+| 221611  | Misfire Count Cyl 4       | A*256+B          | count |
+| 22F405  | Coolant Temp (Ford)       | A-40             | degC  |
+| 22F40F  | Intake Air Temp (Ford)    | A-40             | degC  |
+| 22F40B  | MAP (Ford)                | A                 | kPa   |
+| 22F433  | Barometric Pressure (Ford) | A                 | kPa   |
+| 22F406  | Short Term Fuel Trim (Ford) | A/1.28-100      | %     |
+| 22F407  | Long Term Fuel Trim (Ford) | A/1.28-100      | %     |
+| 22F443  | Engine Load (Ford)        | (A*256+B)/100    | %     |
+| 22F434  | Lambda (Ford)             | (A*256+B)/32768  | lambda|
+| 22F40C  | RPM (Ford)                | (A*256+B)/4      | RPM   |
+| 22F40D  | Vehicle Speed (Ford)      | A                 | km/h  |
+
 ---
 
 **OBD2 Simulator – Built with Visual Studio 2026**
