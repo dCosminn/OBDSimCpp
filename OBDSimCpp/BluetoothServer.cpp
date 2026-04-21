@@ -290,7 +290,7 @@ void BluetoothServer::handleClient()
                 if (!buf.empty()) {
                     cmdCount++;
                     std::string response = handler_->handle(buf);
-                    if (!sendResponse(response)) {
+                    if (!sendResponse(response, handler_->getLinefeedOn())) {
                         std::cerr << "[BT] sendResponse failed -- disconnecting.\n";
                         return;
                     }
@@ -306,9 +306,12 @@ void BluetoothServer::handleClient()
     std::cout << "[BT] handleClient() exited. Commands processed: " << cmdCount << "\n";
 }
 
-bool BluetoothServer::sendResponse(const std::string& response)
+bool BluetoothServer::sendResponse(const std::string& response, bool linefeedOn)
 {
-    std::string full = response + "\r>";
+    // Real ELM327 terminates every response with a CR before the prompt.
+    // With ATL1 active the prompt line also gets a linefeed: \r\n>
+    // With ATL0 (default) it is just: \r>
+    std::string full = response + (linefeedOn ? "\r\n>" : "\r>");
     int sent = send(clientSock_, full.c_str(), (int)full.size(), 0);
     if (sent == SOCKET_ERROR) {
         std::cerr << "[BT] send() FAILED: " << WSAGetLastError() << "\n";

@@ -23,6 +23,7 @@ ELM327Handler::ELM327Handler(const VehicleProfile* profile, EngineSimulator* sim
 void ELM327Handler::resetSession()
 {
     spacesOn_ = true;
+    linefeedOn_ = false;
     echoOn_ = true;
     headersOn_ = false;
     currentEcuAddr_ = "";
@@ -83,11 +84,16 @@ std::string ELM327Handler::handle(const std::string& rawCmd)
     // AT@2 -- device identifier
     if (cmd == "AT@2") return "ELM327";
     // ATRV -- read battery voltage
-    if (cmd == "ATRV") return "14.1V";
+    if (cmd == "ATRV") {
+        char vbuf[16];
+        std::snprintf(vbuf, sizeof(vbuf), "%.1fV", sim_->getState().voltage);
+        return std::string(vbuf);
+    }
     if (cmd == "ATD" || cmd == "ATD0")                   return "OK";
     if (cmd == "ATE0") { echoOn_ = false; return "OK"; }
     if (cmd == "ATE1") { echoOn_ = true;  return "OK"; }
-    if (cmd == "ATL0" || cmd == "ATL1")                  return "OK";
+    if (cmd == "ATL0") { linefeedOn_ = false; return "OK"; }
+    if (cmd == "ATL1") { linefeedOn_ = true;  return "OK"; }
     if (cmd == "ATS0") { spacesOn_ = false; return "OK"; }
     if (cmd == "ATS1") { spacesOn_ = true;  return "OK"; }
     if (cmd == "ATH0") { headersOn_ = false; return "OK"; }
@@ -271,6 +277,9 @@ std::string ELM327Handler::handleMode01(const std::string& pid)
     if (pid == "33") return r3(encKpa1(e.baro));
     if (pid == "42") return r4(encVolt());
     if (pid == "46") return r3(encTemp(e.ambientTemp));
+
+    // Fuel flow rate -- (A*256+B)/20 L/h
+    if (pid == "5E") return r4(encFuelRate());
 
     return "NO DATA";
 }
@@ -504,6 +513,22 @@ std::string ELM327Handler::handleMode22(const std::string& addr)
     // F40D -- Speed (Ford)  formula: A km/h
     if (addr == "F40D") return u3(h8((int)e.speed));
 
+    // 125D -- Fuel Flow Rate  formula: (A*256+B)/100 L/h  (Torque: ff125d)
+    if (addr == "125D") {
+        int v = (int)std::round(e.fuelRate * 100.0f);
+        v = std::max(0, std::min(65535, v));
+        return u4(h16(v));
+    }
+
+    // 1172 -- Battery Voltage  formula: A/16 V  (Torque custom PID)
+    if (addr == "1172") {
+        // A/16 = voltage  -->  encode: round(voltage * 16), clamp 0-255
+        int a = (int)std::round(e.voltage * 16.0f);
+        if (a < 0)   a = 0;
+        if (a > 255) a = 255;
+        return u3(h8(a));
+    }
+
     // Should never reach here (we checked the map above) but just in case
     char hdr[16]; std::snprintf(hdr, sizeof(hdr), "%s 03", ecu.c_str());
     return obdLine(hdr, "7F 22 11");
@@ -595,6 +620,15 @@ std::string ELM327Handler::encMaf() const
 std::string ELM327Handler::encVolt() const
 {
     int v = (int)(sim_->getState().voltage * 1000.0f);
+    return h16(v);
+}
+
+std::string ELM327Handler::encFuelRate() const
+{
+    // OBD-II PID 5E: (A*256+B)/20 L/h  →  encode: round(fuelRate * 20)
+    // At 7 L/100km @ 80 km/h: 5.6 L/h → raw value 112 = 0x0070
+    int v = (int)std::round(sim_->getState().fuelRate * 20.0f);
+    v = std::max(0, std::min(65535, v));
     return h16(v);
 }
 

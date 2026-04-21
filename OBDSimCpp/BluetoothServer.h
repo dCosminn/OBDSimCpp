@@ -41,7 +41,7 @@ private:
     bool registerSdpService(ULONG channel);
     void deregisterSdpService();
     void handleClient();
-    bool sendResponse(const std::string& response);
+    bool sendResponse(const std::string& response, bool linefeedOn = false);
 
     static void printBanner(const std::string& text);
     static void printBox(const std::string& text);

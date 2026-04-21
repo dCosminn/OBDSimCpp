@@ -7,7 +7,10 @@
 //  Engine:    Duratec 1.4 SOHC, 4 cylinders, 80hp @ 6000rpm
 //
 //  Mode 01 PIDs: 19 standard SAE J1979 PIDs
-//  Mode 22 PIDs: 18 Ford proprietary PCM PIDs (community reverse-engineered)
+//  Mode 22 PIDs: 18 Ford proprietary PCM PIDs
+//
+//  NOTE:
+//  Cruise behavior (RPM, load, MAF, etc.) is now provided via EngineParams.
 // =============================================================================
 #include "VehicleProfile.h"
 
@@ -26,14 +29,12 @@ public:
     std::string getEcuResponse()  const override { return "7E8"; }
 
     // ── Engine ────────────────────────────────────────────────────────────────
+    // Includes idle + cruise calibration (RPM, load, MAF, throttle, MAP)
     EngineParams getEngineParams() const override;
 
     // ── Mode 01 bitmasks ─────────────────────────────────────────────────────
-    // Verified against real scan: 19 PIDs across 3 ranges
     std::map<int, uint32_t> getPidBitmasks() const override;
 
     // ── Mode 22 PIDs (Ford Duratec PCM @ 7E0) ────────────────────────────────
-    // Source: community reverse-engineering on Focus/Fiesta forums + FORScan logs
-    // Addresses confirmed responding on 1.4 petrol PCM
     std::map<std::string, std::string> getMode22Pids() const override;
 };

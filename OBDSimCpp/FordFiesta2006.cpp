@@ -6,18 +6,29 @@
 EngineParams FordFiesta2006::getEngineParams() const
 {
     EngineParams p;
-    p.idleRpm          = 800.0f;   // typical 1.4 Duratec idle
-    p.idleRpmVariance  = 40.0f;    // ±40 RPM natural oscillation
-    p.normalCoolant    = 89.0f;    // Ford thermostat opens at 88°C
-    p.normalOilTemp    = 86.0f;    // oil slightly below coolant when warm
-    p.normalIntake     = 24.0f;    // °C  — depends on ambient + engine bay heat
-    p.normalBaro       = 101.0f;   // kPa sea level (Galati is ~10m asl)
-    p.normalFuelLevel  = 65.0f;    // % — arbitrary
-    p.normalVoltage    = 14.057f;  // V  — measured from real scan CSV
-    p.normalMAF        = 2.65f;    // g/s at idle — measured from real scan CSV
-    p.normalLoad       = 21.0f;    // % at idle — measured from real scan CSV
-    p.cylinders        = 4;
-    p.isDiesel         = false;
+    p.idleRpm = 800.0f;
+    p.idleRpmVariance = 40.0f;
+
+    p.normalCoolant = 89.0f;
+    p.normalOilTemp = 86.0f;
+    p.normalIntake = 24.0f;
+    p.normalBaro = 101.0f;
+    p.normalFuelLevel = 65.0f;
+    p.normalVoltage = 14.057f;
+    p.normalMAF = 2.65f;
+    p.normalLoad = 21.0f;
+
+    // ✅ CRUISE VALUES (MOVED HERE)
+    p.cruiseSpeed = 80.0f;
+    p.cruiseRpm = 2250.0f;
+    p.cruiseLoad = 35.0f;
+    p.cruiseMAF = 11.5f;
+    p.cruiseThrottle = 20.0f;
+    p.cruiseMAP = 50.0f;
+
+    p.cylinders = 4;
+    p.isDiesel = false;
+
     return p;
 }
 
@@ -50,7 +61,7 @@ std::map<int, uint32_t> FordFiesta2006::getPidBitmasks() const
     return {
         { 0x00, 0x1E3F9803 },
         { 0x20, 0x00122001 },
-        { 0x40, 0x44000000 },
+        { 0x40, 0x44000004 },
     };
 }
 
@@ -64,6 +75,8 @@ std::map<std::string, std::string> FordFiesta2006::getMode22Pids() const
         { "1131", "Ignition Timing"            },  // (A*256+B)/100 - 64 °
         { "1440", "MAP Extended"               },  // (A*256+B)/100 kPa
         { "113C", "EGR Duty Cycle"             },  // A*100/255 %
+        { "1172", "Battery Voltage"             },  // A/16 V
+        { "125D", "Fuel Flow Rate"              },  // (A*256+B)/100 L/h
 
         // Per-cylinder misfire counters
         { "160E", "Misfire Count Cyl 1"        },  // A*256+B

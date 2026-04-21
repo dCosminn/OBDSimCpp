@@ -23,7 +23,7 @@ public:
     ELM327Handler(const VehicleProfile* profile, EngineSimulator* sim);
 
     // Process one command line (no \r).  Returns full response text without
-    // the prompt character — BluetoothServer appends "\r>" itself.
+    // the prompt character — BluetoothServer appends the prompt itself.
     // Returns empty string if command should produce no output (empty line).
     std::string handle(const std::string& rawCmd);
     std::string getProfileName() const { return profile_->getDisplayName(); }
@@ -31,14 +31,19 @@ public:
     // Reset session state — call when client disconnects
     void resetSession();
 
+    // Returns true if ATL1 (linefeed on) is active — BluetoothServer uses
+    // this to choose the correct line terminator for every response.
+    bool getLinefeedOn() const { return linefeedOn_; }
+
 private:
     const VehicleProfile* profile_;
-    EngineSimulator*      sim_;
+    EngineSimulator* sim_;
 
     // ── ELM327 session state ─────────────────────────────────────────────────
-    bool        spacesOn_  = true;
-    bool        echoOn_    = true;
+    bool        spacesOn_ = true;
+    bool        echoOn_ = true;
     bool        headersOn_ = false;
+    bool        linefeedOn_ = false;   // ATL0 = off (default), ATL1 = on
     std::string currentEcuAddr_ = "";  // set by ATSH, used for Mode 22 routing
 
     // ── Mode handlers ────────────────────────────────────────────────────────
@@ -66,6 +71,7 @@ private:
     std::string encRpm()           const;  // (A*256+B)/4 → h16(rpm*4)
     std::string encMaf()           const;  // (A*256+B)/100 → h16(maf*100)
     std::string encVolt()          const;  // (A*256+B)/1000 → h16(volt*1000)
+    std::string encFuelRate()      const;  // (A*256+B)/20   → h16(fuelRate*20)
     std::string encTiming()        const;  // A/2-64 → h8((t+64)*2)
     std::string encO2(float v)     const;  // A*0.005V → h8(v/0.005)
 };
