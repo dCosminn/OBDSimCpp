@@ -25,7 +25,8 @@ Connect apps like **CarScanner** or **Torque Pro** to get realistic vehicle data
 2. Confirm console shows: `SDP registered OK` and `Listening for incoming connections`  
 3. On Android: pair with your PC via Bluetooth  
 4. Open CarScanner or your OBD app → scan for adapters → select your PC  
-5. Console shows `APP CONNECTED` and starts displaying RX/TX commands  
+5. Console shows `APP CONNECTED` and starts displaying RX/TX commands
+6. You have two modes: Idle and Cruise(80km/h), press 1 or 2 and enter.
 
 ---
 
