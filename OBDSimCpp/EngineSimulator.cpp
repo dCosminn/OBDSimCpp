@@ -35,58 +35,53 @@ void EngineSimulator::update()
     phSpeed_ += dt * 0.07f * TWO_PI;
 
     // =========================================================
-    // MODE LOGIC (FIXED)
+    // MODE (ONLY SOURCE OF TRUTH)
     // =========================================================
-    bool idle = (mode_ == Mode::Idle);
-
-    if (idle)
-        isMoving_ = false;
-    else
-        isMoving_ = true;
+    bool isIdle = (mode_ == Mode::Idle);
 
     // =========================================================
-    // SPEED (FIXED SPIKE BUG)
+    // SPEED (NO SPIKES EVER IN IDLE)
     // =========================================================
-    float targetSpeed = isMoving_ ? params_.cruiseSpeed : 0.0f;
+    float targetSpeed = isIdle ? 0.0f : params_.cruiseSpeed;
 
-    state_.speed =
-        targetSpeed
-        + (isMoving_ ? 1.0f * std::sin(phSpeed_) : 0.0f)
-        + rnd(isMoving_ ? 0.2f : 0.0f);
+    state_.speed = targetSpeed
+        + (isIdle ? 0.0f : 1.0f * std::sin(phSpeed_))
+        + (isIdle ? 0.0f : rnd(0.2f));
 
-    // HARD CLAMP (prevents 250 km/h bug)
-    if (!isMoving_)
+    if (isIdle)
         state_.speed = 0.0f;
 
     // =========================================================
-    // RPM (FIXED IDLE STABILITY)
+    // RPM (CLEAN + STABLE)
     // =========================================================
-    float targetRpm = isMoving_ ? params_.cruiseRpm : params_.idleRpm;
+    float targetRpm = isIdle ? params_.idleRpm : params_.cruiseRpm;
 
-    state_.rpm =
-        targetRpm
-        + (isMoving_ ? 60.0f * std::sin(phRpm_) : 10.0f * std::sin(phRpm_))
-        + rnd(isMoving_ ? 10.0f : 2.0f);
+    state_.rpm = targetRpm
+        + (isIdle ? 10.0f * std::sin(phRpm_) : 60.0f * std::sin(phRpm_))
+        + rnd(isIdle ? 2.0f : 10.0f);
 
-    if (!isMoving_)
-        state_.rpm = std::clamp(state_.rpm, 750.0f, 950.0f);
+    if (isIdle)
+        state_.rpm = std::clamp(state_.rpm,
+            params_.idleRpm - 50.0f,
+            params_.idleRpm + 120.0f);
 
     // =========================================================
     // LOAD
     // =========================================================
-    float targetLoad = isMoving_ ? params_.cruiseLoad : 15.0f;
+    float targetLoad = isIdle ? 15.0f : params_.cruiseLoad;
 
-    state_.load =
-        targetLoad + 2.0f * std::sin(phSpeed_) + rnd(0.3f);
+    state_.load = targetLoad
+        + 2.0f * std::sin(phSpeed_)
+        + rnd(0.3f);
 
     state_.load = std::clamp(state_.load, 0.0f, 100.0f);
 
     // =========================================================
     // MAF / THROTTLE / MAP
     // =========================================================
-    float targetMAF = isMoving_ ? params_.cruiseMAF : params_.normalMAF;
-    float targetThrottle = isMoving_ ? params_.cruiseThrottle : 5.0f;
-    float targetMAP = isMoving_ ? params_.cruiseMAP : 30.0f;
+    float targetMAF = isIdle ? params_.normalMAF : params_.cruiseMAF;
+    float targetThrottle = isIdle ? 5.0f : params_.cruiseThrottle;
+    float targetMAP = isIdle ? 30.0f : params_.cruiseMAP;
 
     state_.maf = targetMAF + rnd(0.1f);
     state_.throttle = targetThrottle + rnd(0.1f);
@@ -116,14 +111,14 @@ void EngineSimulator::update()
     state_.ltft = std::clamp(state_.ltft + rnd(0.001f), -5.0f, 5.0f);
 
     // =========================================================
-    // FUEL RATE (SAFE WHEN IDLE)
+    // FUEL RATE
     // =========================================================
     float consumption = 6.5f + (state_.load / 100.0f) * 2.5f;
 
     state_.fuelRate =
-        isMoving_
-        ? (consumption / 100.0f) * state_.speed
-        : 0.2f;   // idle consumption only
+        isIdle
+        ? 0.2f
+        : (consumption / 100.0f) * state_.speed;
 
     state_.fuelRate = std::max(0.0f, state_.fuelRate);
 }
