@@ -19,7 +19,7 @@ struct EngineParams {
     int cylinders = 4;
     bool isDiesel = false;
 
-    // ✅ CRUISE PARAMETERS (ADDED)
+    // ── CRUISE VALUES ─────────────────────────────
     float cruiseSpeed = 80.0f;
     float cruiseRpm = 2250.0f;
     float cruiseLoad = 35.0f;
@@ -27,7 +27,6 @@ struct EngineParams {
     float cruiseThrottle = 20.0f;
     float cruiseMAP = 50.0f;
 };
-
 class VehicleProfile {
 public:
     virtual ~VehicleProfile() = default;

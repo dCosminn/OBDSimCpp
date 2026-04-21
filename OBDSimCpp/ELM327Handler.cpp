@@ -65,9 +65,9 @@ std::string ELM327Handler::handle(const std::string& rawCmd)
     // (we return echo inline; BluetoothServer prints it separately if needed)
 
     // ── Console log (suppress heartbeat spam) ────────────────────────────────
-    bool isHeartbeat = (cmd == "0100" || cmd == "0120" || cmd == "0140");
-    if (!isHeartbeat)
-        std::cout << "  [RX] " << cmd << "\n";
+    //bool isHeartbeat = (cmd == "0100" || cmd == "0120" || cmd == "0140");
+    //if (!isHeartbeat)
+    //    std::cout << "  [RX] " << cmd << "\n";
 
     // =========================================================================
     //  AT commands

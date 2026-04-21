@@ -272,17 +272,17 @@ void BluetoothServer::handleClient()
         }
 
         // Log raw bytes received (first 50 commands only to avoid spam)
-        if (cmdCount < 50) {
-            recvBuf[bytes] = 0;
-            std::string raw(recvBuf, bytes);
-            std::string escaped;
-            for (char c : raw) {
-                if (c == '\r') escaped += "\\r";
-                else if (c == '\n') escaped += "\\n";
-                else escaped += c;
-            }
-            std::cout << "[BT] RAW recv (" << bytes << " bytes): [" << escaped << "]\n";
-        }
+        //if (cmdCount < 50) {
+        //    recvBuf[bytes] = 0;
+        //    std::string raw(recvBuf, bytes);
+        //    std::string escaped;
+        //    for (char c : raw) {
+        //        if (c == '\r') escaped += "\\r";
+        //        else if (c == '\n') escaped += "\\n";
+        //        else escaped += c;
+        //    }
+        //    std::cout << "[BT] RAW recv (" << bytes << " bytes): [" << escaped << "]\n";
+        //}
 
         for (int i = 0; i < bytes; i++) {
             char c = recvBuf[i];
@@ -317,13 +317,14 @@ bool BluetoothServer::sendResponse(const std::string& response, bool linefeedOn)
         std::cerr << "[BT] send() FAILED: " << WSAGetLastError() << "\n";
         return false;
     }
-    if (!response.empty()) {
-        bool isHeartbeat = (response.find("1E3F9803") != std::string::npos
-            || response.find("00122001") != std::string::npos
-            || response.find("44000000") != std::string::npos);
-        if (!isHeartbeat)
-            std::cout << "  [TX] " << response << "\n";
-    }
+    //tx loggin
+    //if (!response.empty()) {
+    //    bool isHeartbeat = (response.find("1E3F9803") != std::string::npos
+    //        || response.find("00122001") != std::string::npos
+    //        || response.find("44000000") != std::string::npos);
+    //    if (!isHeartbeat)
+    //        std::cout << "  [TX] " << response << "\n";
+    //}
     return true;
 }
 

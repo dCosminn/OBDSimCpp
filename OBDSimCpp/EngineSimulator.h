@@ -29,13 +29,25 @@ struct EngineState {
 
 class EngineSimulator {
 public:
+    enum class Mode {
+        Idle,
+        Cruise
+    };
+
     explicit EngineSimulator(const EngineParams& params);
+
     void update();
     const EngineState& getState() const { return state_; }
+
+    void setMode(Mode m) { mode_ = m; }
 
 private:
     EngineParams params_;
     EngineState state_;
+
+    Mode mode_ = Mode::Idle;
+
+    bool isMoving_ = false;
 
     using Clock = std::chrono::steady_clock;
     Clock::time_point startTime_;
