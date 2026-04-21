@@ -6,6 +6,7 @@
 EngineParams FordFiesta2006::getEngineParams() const
 {
     EngineParams p;
+
     p.idleRpm = 800.0f;
     p.idleRpmVariance = 40.0f;
 
@@ -18,7 +19,7 @@ EngineParams FordFiesta2006::getEngineParams() const
     p.normalMAF = 2.65f;
     p.normalLoad = 21.0f;
 
-    // ✅ CRUISE VALUES (MOVED HERE)
+    // cruise tuning
     p.cruiseSpeed = 80.0f;
     p.cruiseRpm = 2250.0f;
     p.cruiseLoad = 35.0f;
