@@ -17,7 +17,7 @@ static bool isHeartbeatPid(const std::string& pid) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 ELM327Handler::ELM327Handler(const VehicleProfile* profile, EngineSimulator* sim,
-                             DTCManager* dtcManager)
+    DTCManager* dtcManager)
     : profile_(profile), sim_(sim), dtcManager_(dtcManager)
 {
 }
@@ -324,55 +324,122 @@ std::string ELM327Handler::handleMode01(const std::string& pid)
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  DTC response helper: builds a "4X [pairs]" response from a DTC list.
+//  DTC response helper: builds a "4X [count] [pairs]" response from a DTC list.
 //  modeResp = response byte, e.g. 0x43 for Mode 03
+//
+//  SAE J1979 §8.3 payload format:
+//    <modeResp> <count> <DTC1_b1> <DTC1_b2> ...
+//
+//  ISO 15765-4 CAN single frame can carry at most 7 payload bytes.
+//  With the count byte included, a single frame holds at most 2 DTCs
+//  (1 mode + 1 count + 4 DTC bytes = 6 bytes, still ≤ 7).
+//  3 or more DTCs → 8+ bytes → MUST use ISO 15765-2 multi-frame
+//  (First Frame + Consecutive Frame(s)).
+//
+//  ELM327 with headers ON outputs one line per CAN frame, so the caller
+//  receives e.g.:
+//    "7E8 10 08 43 03 01 21 01 30\r7E8 21 01 71 00 00 00 00 00"
+//  With headers OFF it reassembles and outputs the full payload as one line.
 // ─────────────────────────────────────────────────────────────────────────────
-static std::string buildDtcResponse(const std::string& ecu,
-                                    uint8_t modeResp,
-                                    const std::vector<DTCEntry>& dtcs,
-                                    bool headersOn, bool spacesOn)
+
+// Helper: strip spaces from a hex string
+static std::string stripSpaces(const std::string& s)
 {
-    char respByte[4];
-    std::snprintf(respByte, sizeof(respByte), "%02X", modeResp);
+    std::string r;
+    for (char c : s) if (c != ' ') r += c;
+    return r;
+}
 
-    if (dtcs.empty()) {
-        // No DTCs: return "43 00" style response (two zero bytes per SAE J1979)
-        std::string payload = std::string(respByte) + " 00 00";
-        // Strip spaces if needed
-        if (!spacesOn) {
-            std::string r;
-            for (char c : payload) if (c != ' ') r += c;
-            payload = r;
-        }
-        if (headersOn) {
-            char hdr[32];
-            std::snprintf(hdr, sizeof(hdr), "%s 03 ", ecu.c_str());
-            return std::string(hdr) + payload;
-        }
-        return payload;
+// Helper: format a byte array as a spaced hex string ("43 03 01 21 ...")
+static std::string bytesToHex(const std::vector<uint8_t>& v, bool spacesOn)
+{
+    std::string r;
+    char buf[4];
+    for (size_t i = 0; i < v.size(); i++) {
+        if (i) r += ' ';
+        std::snprintf(buf, sizeof(buf), "%02X", v[i]);
+        r += buf;
     }
+    return spacesOn ? r : stripSpaces(r);
+}
 
-    // Build payload: modeResp followed by 2 bytes per DTC
-    // Length byte = 1 (mode response) + 2 * count
-    int lenByte = 1 + 2 * (int)dtcs.size();
-    char hdr[32];
-    std::snprintf(hdr, sizeof(hdr), "%s %02X", ecu.c_str(), lenByte);
-
-    std::string payload = std::string(respByte);
+static std::string buildDtcResponse(const std::string& ecu,
+    uint8_t modeResp,
+    const std::vector<DTCEntry>& dtcs,
+    bool headersOn, bool spacesOn)
+{
+    // ── Build the raw OBD payload (modeResp + count + DTC pairs) ─────────────
+    std::vector<uint8_t> obd;
+    obd.push_back(modeResp);
+    obd.push_back((uint8_t)dtcs.size());   // SAE J1979 count byte (was missing)
     for (const auto& d : dtcs) {
-        char pair[8];
-        std::snprintf(pair, sizeof(pair), " %02X %02X", d.b1, d.b2);
-        payload += pair;
+        obd.push_back(d.b1);
+        obd.push_back(d.b2);
     }
 
-    if (!spacesOn) {
-        std::string r;
-        for (char c : payload) if (c != ' ') r += c;
-        payload = r;
+    // ── Headers OFF: output the raw OBD payload as a single flat string ──────
+    //    (ELM327 reassembles multi-frame internally; the host app sees one line)
+    if (!headersOn)
+        return bytesToHex(obd, spacesOn);
+
+    // ── Headers ON: emit proper ISO 15765-2 CAN frames, one per line ─────────
+    //    CAN single frame holds max 7 payload bytes (8-byte CAN frame minus
+    //    the 1-byte PCI field).  Anything larger needs First Frame + CF(s).
+    const int SF_MAX = 7;   // ISO 15765-2 single-frame max data bytes
+    const int FF_DATA = 6;  // bytes carried in the First Frame after PCI (2 B)
+    const int CF_DATA = 7;  // bytes carried in each Consecutive Frame after PCI (1 B)
+
+    std::string result;
+    char lineBuf[64];
+
+    if ((int)obd.size() <= SF_MAX) {
+        // ── Single Frame ──────────────────────────────────────────────────────
+        //    PCI byte: 0x0N where N = total payload length
+        std::snprintf(lineBuf, sizeof(lineBuf), "%s 0%X", ecu.c_str(), (int)obd.size());
+        result = lineBuf;
+        for (uint8_t b : obd) {
+            std::snprintf(lineBuf, sizeof(lineBuf), spacesOn ? " %02X" : "%02X", b);
+            result += lineBuf;
+        }
     }
-    if (headersOn)
-        return std::string(hdr) + " " + payload;
-    return payload;
+    else {
+        // ── Multi-Frame ───────────────────────────────────────────────────────
+        //    First Frame PCI: 0x10 0xLL where LL = total OBD payload length
+        int totalLen = (int)obd.size();
+        std::snprintf(lineBuf, sizeof(lineBuf),
+            spacesOn ? "%s 10 %02X" : "%s10%02X",
+            ecu.c_str(), totalLen);
+        result = lineBuf;
+
+        // First 6 payload bytes go into the FF
+        int idx = 0;
+        for (int i = 0; i < FF_DATA && idx < totalLen; i++, idx++) {
+            std::snprintf(lineBuf, sizeof(lineBuf), spacesOn ? " %02X" : "%02X", obd[idx]);
+            result += lineBuf;
+        }
+
+        // Consecutive Frames: sequence counter 0x21, 0x22, ...
+        int seq = 1;
+        while (idx < totalLen) {
+            std::snprintf(lineBuf, sizeof(lineBuf),
+                spacesOn ? "\r%s 2%X" : "\r%s2%X",
+                ecu.c_str(), seq & 0x0F);
+            result += lineBuf;
+
+            int cfIdx = 0;
+            for (; cfIdx < CF_DATA && idx < totalLen; cfIdx++, idx++) {
+                std::snprintf(lineBuf, sizeof(lineBuf), spacesOn ? " %02X" : "%02X", obd[idx]);
+                result += lineBuf;
+            }
+            // Pad remainder of CF to 7 bytes with 0x00
+            for (; cfIdx < CF_DATA; cfIdx++) {
+                result += spacesOn ? " 00" : "00";
+            }
+            seq++;
+        }
+    }
+
+    return result;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -382,9 +449,9 @@ std::string ELM327Handler::handleMode03()
 {
     const auto& dtcs = dtcManager_->getStored();
     std::cout << "  [RX] 0 - stored DTCs requested ("
-              << dtcs.size() << " fault(s))\n";
+        << dtcs.size() << " fault(s))\n";
     return buildDtcResponse(profile_->getEcuResponse(),
-                            0x43, dtcs, headersOn_, spacesOn_);
+        0x43, dtcs, headersOn_, spacesOn_);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -394,9 +461,9 @@ std::string ELM327Handler::handleMode07()
 {
     const auto& dtcs = dtcManager_->getPending();
     std::cout << "  [RX] 07 - pending DTCs requested ("
-              << dtcs.size() << " fault(s))\n";
+        << dtcs.size() << " fault(s))\n";
     return buildDtcResponse(profile_->getEcuResponse(),
-                            0x47, dtcs, headersOn_, spacesOn_);
+        0x47, dtcs, headersOn_, spacesOn_);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -406,9 +473,9 @@ std::string ELM327Handler::handleMode0A()
 {
     const auto& dtcs = dtcManager_->getPermanent();
     std::cout << "  [RX] 0A - permanent DTCs requested ("
-              << dtcs.size() << " fault(s))\n";
+        << dtcs.size() << " fault(s))\n";
     return buildDtcResponse(profile_->getEcuResponse(),
-                            0x4A, dtcs, headersOn_, spacesOn_);
+        0x4A, dtcs, headersOn_, spacesOn_);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
