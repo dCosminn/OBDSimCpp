@@ -10,7 +10,6 @@ Connect apps like **CarScanner** or **Torque Pro** to get realistic vehicle data
 - Engine simulation: RPM, coolant, O2, fuel trim  
 - DTC fault injection with MIL (Mode 03 / 07 / 0A / 04)  
 - Windows Bluetooth Classic (RFCOMM/SPP)  
-- Console logging with RX/TX display  
 
 ---
 
@@ -26,7 +25,7 @@ Connect apps like **CarScanner** or **Torque Pro** to get realistic vehicle data
 2. Confirm console shows: `SDP registered OK` and `Listening for incoming connections`  
 3. On Android: pair with your PC via Bluetooth  
 4. Open CarScanner or your OBD app → scan for adapters → select your PC  
-5. Console shows `APP CONNECTED` and starts displaying RX/TX commands
+5. Console shows [TX] Adatpter info
 6. Use the console menu to control the simulation (see Console Commands below)
 
 ---
@@ -37,7 +36,7 @@ Connect apps like **CarScanner** or **Torque Pro** to get realistic vehicle data
 |-----|--------|
 | `1` | Idle mode (~800 RPM) |
 | `2` | Cruise mode (~80 km/h) |
-| `3` | Inject DTCs — shows numbered list, enter indices (e.g. `1 3 5`) or `r` for random |
+| `3` | Inject DTCs — shows numbered list, enter indices (e.g. `1 3 5`) or `0` for random |
 | `4` | Clear all DTCs (MIL off) |
 
 ---
@@ -52,7 +51,8 @@ The simulator implements the full OBD2 DTC flow:
 - **Mode 04** — clears stored and pending, turns MIL off; permanent codes are unaffected  
 - **Mode 01 PID 01** — reports MIL on/off status and stored DTC count  
 
-Press `3` to see the full list of 39 available fault codes for the Ford Fiesta 1.4, grouped by system (MAF, coolant, O2, catalyst, misfire, camshaft, throttle, EGR, EVAP, voltage, Ford-specific). Enter one or more numbers to activate them, or `r` for a random selection of 1–3 faults.
+Press `3` to see the full list of 39 available fault codes for the Ford Fiesta 1.4, grouped by system (MAF, coolant, O2, catalyst, misfire, camshaft, throttle, EGR, EVAP, voltage, Ford-specific). 
+Enter one or more numbers to activate them, or `0` for a random selection of 1–3 faults.
 
 ---
 
