@@ -33,6 +33,9 @@
     <ClCompile Include="FordFiesta2006.cpp">
       <Filter>Vehicles</Filter>
     </ClCompile>
+    <ClCompile Include="DTCManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BluetoothServer.h">
@@ -49,6 +52,12 @@
     </ClInclude>
     <ClInclude Include="FordFiesta2006.h">
       <Filter>Vehicles</Filter>
+    </ClInclude>
+    <ClInclude Include="DTCManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DTCEntry.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

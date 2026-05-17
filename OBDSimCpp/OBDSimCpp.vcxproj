@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BluetoothServer.cpp" />
+    <ClCompile Include="DTCManager.cpp" />
     <ClCompile Include="ELM327Handler.cpp" />
     <ClCompile Include="EngineSimulator.cpp" />
     <ClCompile Include="FordFiesta2006.cpp" />
@@ -27,6 +28,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BluetoothServer.h" />
+    <ClInclude Include="DTCEntry.h" />
+    <ClInclude Include="DTCManager.h" />
     <ClInclude Include="ELM327Handler.h" />
     <ClInclude Include="EngineSimulator.h" />
     <ClInclude Include="FordFiesta2006.h" />

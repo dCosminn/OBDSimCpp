@@ -11,16 +11,22 @@
 //    AT commands  — ATZ, ATE, ATL, ATS, ATH, ATSP, ATSH, ATAT, ATAL, ATST,
 //                   ATM, ATD, STI, VTI, ATDP
 //    Mode 01      — Standard SAE J1979 PIDs (bitmask discovery + data)
+//    Mode 03      — Request stored DTCs
+//    Mode 04      — Clear DTCs / reset MIL
+//    Mode 07      — Request pending DTCs
 //    Mode 09      — Vehicle information (VIN, calibration ID, ECU name)
+//    Mode 0A      — Request permanent DTCs
 //    Mode 22      — Ford UDS proprietary PIDs
 // =============================================================================
 #include "VehicleProfile.h"
 #include "EngineSimulator.h"
+#include "DTCManager.h"
 #include <string>
 
 class ELM327Handler {
 public:
-    ELM327Handler(const VehicleProfile* profile, EngineSimulator* sim);
+    ELM327Handler(const VehicleProfile* profile, EngineSimulator* sim,
+                  DTCManager* dtcManager);
 
     // Process one command line (no \r).  Returns full response text without
     // the prompt character — BluetoothServer appends the prompt itself.
@@ -38,6 +44,7 @@ public:
 private:
     const VehicleProfile* profile_;
     EngineSimulator* sim_;
+    DTCManager*      dtcManager_;
 
     // ── ELM327 session state ─────────────────────────────────────────────────
     bool        spacesOn_ = true;
@@ -48,8 +55,11 @@ private:
 
     // ── Mode handlers ────────────────────────────────────────────────────────
     std::string handleMode01(const std::string& pid);
+    std::string handleMode03();                          // stored DTCs
+    std::string handleMode07();                          // pending DTCs
+    std::string handleMode0A();                          // permanent DTCs
     std::string handleMode09(const std::string& pid);
-    std::string handleMode22(const std::string& addr);   // 4-char address e.g. "1310"
+    std::string handleMode22(const std::string& addr);  // 4-char address e.g. "1310"
 
     // ── Response formatting ──────────────────────────────────────────────────
     // Build a complete OBD response line with optional header + spaces

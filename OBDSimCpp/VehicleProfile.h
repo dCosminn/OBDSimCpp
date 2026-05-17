@@ -1,7 +1,9 @@
 #pragma once
 #include <string>
 #include <map>
+#include <vector>
 #include <cstdint>
+#include "DTCEntry.h"
 
 struct EngineParams {
     float idleRpm = 800.0f;
@@ -19,7 +21,7 @@ struct EngineParams {
     int cylinders = 4;
     bool isDiesel = false;
 
-    // ── CRUISE VALUES ─────────────────────────────
+    // -- CRUISE VALUES -------------------------------------
     float cruiseSpeed = 80.0f;
     float cruiseRpm = 2250.0f;
     float cruiseLoad = 35.0f;
@@ -27,24 +29,29 @@ struct EngineParams {
     float cruiseThrottle = 20.0f;
     float cruiseMAP = 50.0f;
 };
+
 class VehicleProfile {
 public:
     virtual ~VehicleProfile() = default;
 
-    virtual std::string getVIN() const = 0;
+    virtual std::string getVIN()           const = 0;
     virtual std::string getCalibrationID() const = 0;
-    virtual std::string getPartNumber() const = 0;
-    virtual std::string getEcuName() const = 0;
-    virtual std::string getMake() const = 0;
-    virtual std::string getModel() const = 0;
-    virtual std::string getYear() const = 0;
-    virtual std::string getELMProtocol() const = 0;
-    virtual std::string getProtocolDesc() const = 0;
-    virtual std::string getEcuResponse() const = 0;
+    virtual std::string getPartNumber()    const = 0;
+    virtual std::string getEcuName()       const = 0;
+    virtual std::string getMake()          const = 0;
+    virtual std::string getModel()         const = 0;
+    virtual std::string getYear()          const = 0;
+    virtual std::string getELMProtocol()   const = 0;
+    virtual std::string getProtocolDesc()  const = 0;
+    virtual std::string getEcuResponse()   const = 0;
 
-    virtual EngineParams getEngineParams() const = 0;
-    virtual std::map<int, uint32_t> getPidBitmasks() const = 0;
-    virtual std::map<std::string, std::string> getMode22Pids() const = 0;
+    virtual EngineParams                       getEngineParams()  const = 0;
+    virtual std::map<int, uint32_t>            getPidBitmasks()   const = 0;
+    virtual std::map<std::string, std::string> getMode22Pids()    const = 0;
+
+    // Each vehicle defines its own realistic DTC fault pool.
+    // DTCManager is initialised from this so faults are car-specific.
+    virtual std::vector<DTCEntry>              getDtcPool()       const = 0;
 
     std::string getDisplayName() const {
         return getMake() + " " + getModel() + " (" + getYear() + ")";

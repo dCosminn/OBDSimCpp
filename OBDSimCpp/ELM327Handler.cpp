@@ -2,6 +2,7 @@
 //  ELM327Handler.cpp
 // =============================================================================
 #include "ELM327Handler.h"
+#include "DTCManager.h"
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
@@ -15,8 +16,9 @@ static bool isHeartbeatPid(const std::string& pid) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-ELM327Handler::ELM327Handler(const VehicleProfile* profile, EngineSimulator* sim)
-    : profile_(profile), sim_(sim)
+ELM327Handler::ELM327Handler(const VehicleProfile* profile, EngineSimulator* sim,
+                             DTCManager* dtcManager)
+    : profile_(profile), sim_(sim), dtcManager_(dtcManager)
 {
 }
 
@@ -125,6 +127,34 @@ std::string ELM327Handler::handle(const std::string& rawCmd)
     // Unrecognised AT command
     if (cmd.size() >= 2 && cmd[0] == 'A' && cmd[1] == 'T') return "OK";
     if (cmd.size() >= 2 && cmd[0] == 'S' && cmd[1] == 'T') return "OK";
+
+    // =========================================================================
+    //  OBD Mode 03 -- Request stored DTCs
+    // =========================================================================
+    if (cmd == "03")
+        return handleMode03();
+
+    // =========================================================================
+    //  OBD Mode 04 -- Clear DTCs / reset MIL
+    // =========================================================================
+    if (cmd == "04") {
+        dtcManager_->clearFaults();
+        const std::string& ecu = profile_->getEcuResponse();
+        char hdr[16]; std::snprintf(hdr, sizeof(hdr), "%s 01", ecu.c_str());
+        return obdLine(hdr, "44");
+    }
+
+    // =========================================================================
+    //  OBD Mode 07 -- Request pending DTCs
+    // =========================================================================
+    if (cmd == "07")
+        return handleMode07();
+
+    // =========================================================================
+    //  OBD Mode 0A -- Request permanent DTCs
+    // =========================================================================
+    if (cmd == "0A")
+        return handleMode0A();
 
     // =========================================================================
     //  OBD Mode 01 -- Standard SAE J1979
@@ -247,7 +277,15 @@ std::string ELM327Handler::handleMode01(const std::string& pid)
         };
 
     // ── Status / monitor ─────────────────────────────────────────────────────
-    if (pid == "01") return r6("00 07 65 00");   // no MIL, all monitors complete
+    if (pid == "01") {
+        // Byte A: bit 7 = MIL lamp, bits 6-0 = number of stored DTCs
+        int dtcCount = dtcManager_->getDtcCount();
+        uint8_t byteA = (uint8_t)(dtcCount & 0x7F);
+        if (dtcManager_->hasMIL()) byteA |= 0x80;
+        char buf[32];
+        std::snprintf(buf, sizeof(buf), "%02X 07 65 00", byteA);
+        return r6(buf);
+    }
 
     // ── Mode 01 data PIDs ────────────────────────────────────────────────────
     if (pid == "04") return r3(encPct(e.load));
@@ -284,6 +322,94 @@ std::string ELM327Handler::handleMode01(const std::string& pid)
     return "NO DATA";
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  DTC response helper: builds a "4X [pairs]" response from a DTC list.
+//  modeResp = response byte, e.g. 0x43 for Mode 03
+// ─────────────────────────────────────────────────────────────────────────────
+static std::string buildDtcResponse(const std::string& ecu,
+                                    uint8_t modeResp,
+                                    const std::vector<DTCEntry>& dtcs,
+                                    bool headersOn, bool spacesOn)
+{
+    char respByte[4];
+    std::snprintf(respByte, sizeof(respByte), "%02X", modeResp);
+
+    if (dtcs.empty()) {
+        // No DTCs: return "43 00" style response (two zero bytes per SAE J1979)
+        std::string payload = std::string(respByte) + " 00 00";
+        // Strip spaces if needed
+        if (!spacesOn) {
+            std::string r;
+            for (char c : payload) if (c != ' ') r += c;
+            payload = r;
+        }
+        if (headersOn) {
+            char hdr[32];
+            std::snprintf(hdr, sizeof(hdr), "%s 03 ", ecu.c_str());
+            return std::string(hdr) + payload;
+        }
+        return payload;
+    }
+
+    // Build payload: modeResp followed by 2 bytes per DTC
+    // Length byte = 1 (mode response) + 2 * count
+    int lenByte = 1 + 2 * (int)dtcs.size();
+    char hdr[32];
+    std::snprintf(hdr, sizeof(hdr), "%s %02X", ecu.c_str(), lenByte);
+
+    std::string payload = std::string(respByte);
+    for (const auto& d : dtcs) {
+        char pair[8];
+        std::snprintf(pair, sizeof(pair), " %02X %02X", d.b1, d.b2);
+        payload += pair;
+    }
+
+    if (!spacesOn) {
+        std::string r;
+        for (char c : payload) if (c != ' ') r += c;
+        payload = r;
+    }
+    if (headersOn)
+        return std::string(hdr) + " " + payload;
+    return payload;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Mode 03 -- Stored DTCs
+// ─────────────────────────────────────────────────────────────────────────────
+std::string ELM327Handler::handleMode03()
+{
+    const auto& dtcs = dtcManager_->getStored();
+    std::cout << "  [RX] 0 - stored DTCs requested ("
+              << dtcs.size() << " fault(s))\n";
+    return buildDtcResponse(profile_->getEcuResponse(),
+                            0x43, dtcs, headersOn_, spacesOn_);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Mode 07 -- Pending DTCs
+// ─────────────────────────────────────────────────────────────────────────────
+std::string ELM327Handler::handleMode07()
+{
+    const auto& dtcs = dtcManager_->getPending();
+    std::cout << "  [RX] 07 - pending DTCs requested ("
+              << dtcs.size() << " fault(s))\n";
+    return buildDtcResponse(profile_->getEcuResponse(),
+                            0x47, dtcs, headersOn_, spacesOn_);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Mode 0A -- Permanent DTCs (same as stored for this simulator)
+// ─────────────────────────────────────────────────────────────────────────────
+std::string ELM327Handler::handleMode0A()
+{
+    const auto& dtcs = dtcManager_->getPermanent();
+    std::cout << "  [RX] 0A - permanent DTCs requested ("
+              << dtcs.size() << " fault(s))\n";
+    return buildDtcResponse(profile_->getEcuResponse(),
+                            0x4A, dtcs, headersOn_, spacesOn_);
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Mode 09 -- Vehicle information

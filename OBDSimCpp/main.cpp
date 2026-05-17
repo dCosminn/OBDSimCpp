@@ -1,4 +1,6 @@
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 #include <memory>
 #include <csignal>
 #include <thread>
@@ -9,6 +11,7 @@
 #include "EngineSimulator.h"
 #include "ELM327Handler.h"
 #include "BluetoothServer.h"
+#include "DTCManager.h"
 
 // Global server pointer so Ctrl+C handler can stop it cleanly
 static BluetoothServer* g_server = nullptr;
@@ -38,7 +41,10 @@ int main()
     // ✅ FORCE START MODE = IDLE
     sim.setMode(EngineSimulator::Mode::Idle);
 
-    ELM327Handler handler(car.get(), &sim);
+    // DTCManager is seeded with this car's fault pool
+    DTCManager dtcManager(car->getDtcPool());
+
+    ELM327Handler handler(car.get(), &sim, &dtcManager);
 
     BluetoothServer server("OBD2_" + car->getMake(), &handler, &sim);
     g_server = &server;
@@ -54,7 +60,7 @@ int main()
     std::cout << "Press Ctrl+C to stop.\n\n";
 
     // ============================
-    // MODE SWITCH THREAD (FIXED)
+    // MODE SWITCH THREAD
     // ============================
     std::atomic<bool> running{ true };
 
@@ -62,7 +68,7 @@ int main()
         {
             while (running)
             {
-                std::cout << "\n[MODE] 1 = IDLE | 2 = CRUISE > ";
+                std::cout << "[MODE] 1=IDLE | 2=CRUISE | 3=SET FAULTS | 4=CLEAR FAULTS\n ";
                 std::string input;
                 std::getline(std::cin, input);
 
@@ -75,6 +81,33 @@ int main()
                 {
                     sim.setMode(EngineSimulator::Mode::Cruise);
                     std::cout << "CRUISE MODE ACTIVE\n";
+                }
+                else if (input == "3")
+                {
+                    // Print numbered list of all available DTCs for this car
+                    const auto& pool = dtcManager.getPool();
+                    std::cout << "\nAvailable faults:\n";
+                    for (int i = 0; i < (int)pool.size(); i++)
+                        std::cout << "  " << std::setw(2) << (i + 1) << ". "
+                        << pool[i].code << "  " << pool[i].desc << "\n";
+
+                    std::cout << "\nEnter numbers separated by spaces (e.g. 1 5 12), or 0 for random:\n";
+                    std::string line;
+                    std::getline(std::cin, line);
+
+                    std::istringstream ss(line);
+                    int n;
+                    std::vector<int> picks;
+                    while (ss >> n) picks.push_back(n);
+
+                    if (picks.size() == 1 && picks[0] == 0)
+                        dtcManager.randomizeFaults();
+                    else
+                        dtcManager.setFaults(picks);
+                }
+                else if (input == "4")
+                {
+                    dtcManager.clearFaults();
                 }
             }
         });
